@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>结局 · 仙途问道</title>
+<link rel="stylesheet" href="css/style.css">
+<!-- 数据脚本 -->
+<script src="js/pills.js"></script>
+<script src="js/adventure.js"></script>
+<script src="js/event.js"></script>
+<script src="js/fate.js"></script>
+<!-- 功法系统 -->
+<script src="js/technique.js"></script>
+<!-- 法宝系统 -->
+<script src="js/treasure.js"></script>
+<!-- 角色系统 -->
+<script src="js/character.js"></script>
+<!-- 公共脚本 -->
+<script src="js/game.js"></script>
+<script>
+// 页面加载时读取结局数据
+document.addEventListener('DOMContentLoaded', function() {
+  const endingData = JSON.parse(localStorage.getItem('endingData') || '{}');
+  
+  if (endingData.title) {
+    document.getElementById('ending-title').textContent = endingData.title;
+  }
+  if (endingData.subtitle) {
+    document.getElementById('ending-subtitle').textContent = endingData.subtitle;
+  }
+  if (endingData.years) {
+    document.getElementById('ending-years').textContent = endingData.years + ' 年';
+  }
+  if (endingData.cultivation) {
+    document.getElementById('ending-cultivation').textContent = endingData.cultivation.toLocaleString();
+  }
+  if (endingData.power) {
+    document.getElementById('ending-power').textContent = endingData.power.toLocaleString();
+  }
+  if (endingData.adventures) {
+    document.getElementById('ending-adventures').textContent = endingData.adventures + ' 次';
+  }
+});
+</script>
+
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particles"></canvas>
+
+<!-- 工具提示 -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ===== 结局页 ===== -->
+<div class="page active" id="page-ending">
+  <div class="ending-badge" id="ending-badge">🌟</div>
+  <div class="ending-title" id="ending-title">飞升成仙</div>
+  <div class="ending-subtitle" id="ending-subtitle">修行 312 年 · 终达大道彼岸</div>
+  <div class="ending-summary">
+
+    <div class="ending-stat"><span class="ending-stat-label">修行年数</span><span class="ending-stat-val" id="ending-years">312 年</span></div>
+    <div class="ending-stat"><span class="ending-stat-label">最终修为</span><span class="ending-stat-val" id="ending-cultivation">99,840</span></div>
+    <div class="ending-stat"><span class="ending-stat-label">战力</span><span class="ending-stat-val" id="ending-power">128,000</span></div>
+    <div class="ending-stat"><span class="ending-stat-label">奇遇次数</span><span class="ending-stat-val" id="ending-adventures">47 次</span></div>
+
+  </div>
+  <button class="btn-start" onclick="restartGame()">再修一世</button>
+</div>
+
+
+</html>

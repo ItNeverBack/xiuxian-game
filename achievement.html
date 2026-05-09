@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>成就系统 · 仙途问道</title>
+<link rel="stylesheet" href="css/style.css">
+<script src="js/achievement.js"></script>
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particles"></canvas>
+
+<!-- ===== 成就页面 ===== -->
+<div class="page active" id="page-achievement">
+  <div class="achievement-container">
+    <!-- 顶部栏 -->
+    <div class="achievement-header">
+      <button class="btn-back" onclick="history.back()">← 返回</button>
+      <h1 class="achievement-title">成 就 系 统</h1>
+      <div class="achievement-progress">
+        <span class="progress-label">已解锁</span>
+        <span class="progress-value" id="achievement-unlocked">0</span>
+        <span class="progress-separator">/</span>
+        <span class="progress-total" id="achievement-total">45</span>
+        <span class="progress-percent" id="achievement-percent">(0%)</span>
+      </div>
+    </div>
+
+    <!-- 成就列表 -->
+    <div class="achievement-list" id="achievement-list">
+      <!-- 由JS动态生成 -->
+    </div>
+  </div>
+</div>
+
+<!-- 成就解锁弹窗 -->
+<div class="achievement-toast" id="achievement-toast" style="display: none;">
+  <div class="toast-glow"></div>
+  <div class="toast-content">
+    <div class="toast-icon">✦</div>
+    <div class="toast-text">
+      <div class="toast-title" id="toast-title">成就解锁</div>
+      <div class="toast-name" id="toast-name">成就名称</div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+  initParticles();
+  renderAchievements();
+  updateProgress();
+});
+
+// 渲染成就列表
+function renderAchievements() {
+  const list = document.getElementById('achievement-list');
+  const unlockedList = getUnlockedAchievements();
+  
+  let html = '';
+  
+  achievements.forEach(achievement => {
+    const isUnlocked = isAchievementUnlocked(achievement.id);
+    const rarityColor = RARITY_COLORS[achievement.rarity];
+    const categoryName = CATEGORY_NAMES[achievement.category];
+    const typeLabel = achievement.type === 'single' ? '单局' : '累积';
+    
+    // 获取进度
+    let progressText = '';
+    if (!isUnlocked) {
+      progressText = getAchievementProgress(achievement);
+    } else {
+      progressText = '已解锁';
+    }
+    
+    // 获取显示名称（隐藏成就未解锁时显示???）
+    const displayName = achievement.hidden && !isUnlocked ? '???' : achievement.name;
+    // 获取显示描述（隐藏成就未解锁时不显示）
+    const displayDesc = achievement.hidden && !isUnlocked ? '隐藏成就' : achievement.desc;
+    
+    html += `
+      <div class="achievement-card ${isUnlocked ? 'unlocked' : 'locked'}" 
+           style="--rarity-color: ${rarityColor}">
+        <div class="achievement-icon ${isUnlocked ? 'shining' : ''}">
+          ${isUnlocked ? '✦' : '·'}
+        </div>
+        <div class="achievement-info">
+          <div class="achievement-name">${displayName}</div>
+          <div class="achievement-desc">${displayDesc}</div>
+        </div>
+        <div class="achievement-tags">
+          <span class="tag-category">${categoryName}</span>
+          <span class="tag-type">${typeLabel}</span>
+          <span class="tag-rarity" style="color: ${rarityColor}">${getRarityName(achievement.rarity)}</span>
+        </div>
+        <div class="achievement-status">
+          ${isUnlocked ? '<span class="status-unlocked">✓</span>' : `<span class="status-progress">${progressText}</span>`}
+        </div>
+      </div>
+    `;
+  });
+  
+  list.innerHTML = html;
+}
+
+// 获取已解锁成就列表
+function getUnlockedAchievements() {
+  const cumulative = JSON.parse(localStorage.getItem('achievementCumulative') || '[]');
+  const singleRun = JSON.parse(localStorage.getItem('achievementSingleRun') || '{}');
+  
+  const unlocked = [...cumulative];
+  
+  // 检查单局成就
+  Object.keys(singleRun).forEach(id => {
+    if (singleRun[id] && !unlocked.includes(id)) {
+      // 需要重新计算单局状态
+    }
+  });
+  
+  return unlocked;
+}
+
+// 检查成就是否已解锁
+function isAchievementUnlocked(id) {
+  // 累积成就
+  const cumulative = JSON.parse(localStorage.getItem('achievementCumulative') || '[]');
+  if (cumulative.includes(id)) return true;
+  
+  // 单局成就
+  const singleRun = JSON.parse(localStorage.getItem('achievementSingleRun') || '{}');
+  if (singleRun[id]) return true;
+  
+  return false;
+}
+
+// 获取成就进度文本
+function getAchievementProgress(achievement) {
+  const condition = achievement.condition;
+  
+  switch (condition.type) {
+    case 'totalCultivation':
+      const cultCount = parseInt(localStorage.getItem('totalCultivation') || '0');
+      return `${cultCount}/${condition.value}`;
+    case 'totalWealth':
+      const wealthCount = parseInt(localStorage.getItem('totalWealthGained') || '0');
+      return `${wealthCount}/${condition.value}`;
+    case 'totalAdventure':
+      const advCount = parseInt(localStorage.getItem('totalAdventures') || '0');
+      return `${advCount}/${condition.value}`;
+    case 'totalPill':
+      const pillCount = parseInt(localStorage.getItem('totalPillsUsed') || '0');
+      return `${pillCount}/${condition.value}`;
+    case 'totalTechnique':
+      const techIds = JSON.parse(localStorage.getItem('unlockedTechniques') || '[]');
+      return `${techIds.length}/${condition.value}`;
+    case 'totalTreasure':
+      const tresIds = JSON.parse(localStorage.getItem('unlockedTreasures') || '[]');
+      return `${tresIds.length}/${condition.value}`;
+    default:
+      return '未解锁';
+  }
+}
+
+// 更新进度显示
+function updateProgress() {
+  const unlocked = getUnlockedAchievements().length;
+  const total = TOTAL_ACHIEVEMENTS;
+  const percent = Math.round((unlocked / total) * 100);
+  
+  document.getElementById('achievement-unlocked').textContent = unlocked;
+  document.getElementById('achievement-total').textContent = total;
+  document.getElementById('achievement-percent').textContent = `(${percent}%)`;
+}
+
+// 粒子背景
+function initParticles() {
+  const canvas = document.getElementById('particles');
+  const ctx = canvas.getContext('2d');
+  
+  function resize() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+  resize();
+  window.addEventListener('resize', resize);
+  
+  const particles = [];
+  for (let i = 0; i < 50; i++) {
+    particles.push({
+      x: Math.random() * canvas.width,
+      y: Math.random() * canvas.height,
+      size: Math.random() * 2 + 1,
+      speedY: Math.random() * 0.5 + 0.1,
+      opacity: Math.random() * 0.5 + 0.3
+    });
+  }
+  
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    particles.forEach(p => {
+      p.y -= p.speedY;
+      if (p.y < 0) {
+        p.y = canvas.height;
+        p.x = Math.random() * canvas.width;
+      }
+      
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(201, 168, 76, ${p.opacity})`;
+      ctx.fill();
+    });
+    
+    requestAnimationFrame(animate);
+  }
+  animate();
+}
+
+// 显示成就解锁通知（供外部调用）
+window.showAchievementToast = function(id) {
+  const achievement = getAchievementById(id);
+  if (!achievement) return;
+  
+  const toast = document.getElementById('achievement-toast');
+  const toastTitle = document.getElementById('toast-title');
+  const toastName = document.getElementById('toast-name');
+  
+  toastTitle.textContent = '成就解锁';
+  toastName.textContent = achievement.name;
+  toastName.style.color = RARITY_COLORS[achievement.rarity];
+  
+  toast.style.display = 'block';
+  toast.classList.add('show');
+  
+  setTimeout(() => {
+    toast.classList.remove('show');
+    setTimeout(() => {
+      toast.style.display = 'none';
+    }, 500);
+  }, 3000);
+};
+</script>
+
+</body>
+</html>

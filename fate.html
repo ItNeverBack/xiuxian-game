@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>选择命运 · 仙途问道</title>
+<link rel="stylesheet" href="css/style.css">
+<script>
+  if (!sessionStorage.getItem('fromIndex')) {
+    window.location.href = 'index.html';
+  }
+</script>
+<style>
+  /* 命运池页面专用样式 - 整体缩放适配 */
+  body {
+    overflow-y: auto;
+  }
+
+  .fate-pool-container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 15px;
+    transform-origin: top center;
+    transform: scale(0.85);
+    margin-bottom: -80px;
+  }
+
+  .fate-pool-header {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  .fate-pool-header h1 {
+    font-size: 1.5rem;
+    color: var(--gold-light);
+    letter-spacing: 0.2em;
+    text-shadow: 0 0 20px rgba(201,168,76,0.4);
+    margin-bottom: 8px;
+  }
+
+  .fate-pool-header p {
+    color: var(--text-dim);
+    letter-spacing: 0.1em;
+    font-size: 0.85rem;
+  }
+
+  /* 角色属性预览面板 */
+  .fate-attrs-panel {
+    background: rgba(30, 40, 60, 0.8);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 15px;
+    margin-bottom: 15px;
+  }
+
+  .fate-attrs-title {
+    text-align: center;
+    color: var(--gold);
+    font-size: 0.75rem;
+    letter-spacing: 0.15em;
+    margin-bottom: 10px;
+  }
+
+  .fate-attrs-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .fate-attr-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px 8px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+  }
+
+  .fate-attr-label {
+    color: var(--text-dim);
+    font-size: 0.7rem;
+  }
+
+  .fate-attr-value {
+    color: var(--text);
+    font-weight: bold;
+    font-size: 0.85rem;
+  }
+
+  .fate-attr-bonus {
+    color: var(--green);
+    font-size: 0.65rem;
+    margin-left: 2px;
+  }
+
+  .fate-draw-area {
+    text-align: center;
+    margin-bottom: 15px;
+  }
+
+  .fate-draw-info {
+    color: var(--text-dim);
+    font-size: 0.8rem;
+    margin-bottom: 10px;
+  }
+
+  .fate-draw-info span {
+    color: var(--gold);
+    font-weight: bold;
+  }
+
+  .btn-draw, .btn-redraw {
+    background: linear-gradient(135deg, #2a3a5a, #3a5a8a);
+    border: 1px solid var(--blue);
+    color: #fff;
+    padding: 8px 20px;
+    font-size: 0.85rem;
+    letter-spacing: 0.15em;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 4px;
+    transition: all 0.3s;
+    margin: 0 5px;
+  }
+
+  .btn-redraw {
+    background: linear-gradient(135deg, #4a3a2a, #6a5a4a);
+    border-color: var(--gold-dim);
+    color: var(--gold-light);
+  }
+
+  .btn-draw:hover, .btn-redraw:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(91,140,232,0.4);
+  }
+
+  .fate-cards-pool {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+
+  .fate-card-pool {
+    background: var(--bg-card);
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .fate-card-pool::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  /* 稀有度边框颜色 */
+  .fate-card-pool.rarity-common::before { background: var(--text-dim); }
+  .fate-card-pool.rarity-uncommon::before { background: var(--green); }
+  .fate-card-pool.rarity-rare::before { background: var(--blue); }
+  .fate-card-pool.rarity-epic::before { background: var(--purple); }
+  .fate-card-pool.rarity-legendary::before { background: linear-gradient(to right, #ff6b35, #f7c548, #ff6b35); }
+  .fate-card-pool.rarity-black::before { background: linear-gradient(to right, #333, #666, #333); }
+
+  .fate-card-pool.rarity-common { border-color: var(--border); }
+  .fate-card-pool.rarity-uncommon { border-color: rgba(93,184,122,0.5); }
+  .fate-card-pool.rarity-rare { border-color: rgba(91,140,232,0.5); }
+  .fate-card-pool.rarity-epic { border-color: rgba(155,110,232,0.5); }
+  .fate-card-pool.rarity-legendary {
+    border-color: rgba(255,107,53,0.6);
+    animation: legendaryGlow 2s ease-in-out infinite;
+  }
+
+  .fate-card-pool.rarity-black {
+    border-color: rgba(80,80,80,0.8);
+    background: linear-gradient(135deg, rgba(40,40,40,0.9), rgba(20,20,20,0.95));
+    animation: blackPulse 2s ease-in-out infinite;
+  }
+
+  @keyframes legendaryGlow {
+    0%, 100% { box-shadow: 0 0 8px rgba(255,107,53,0.3); }
+    50% { box-shadow: 0 0 18px rgba(255,107,53,0.6); }
+  }
+
+  @keyframes blackPulse {
+    0%, 100% { box-shadow: 0 0 6px rgba(100,100,100,0.4); }
+    50% { box-shadow: 0 0 12px rgba(100,100,100,0.7); }
+  }
+
+  .fate-card-pool:hover {
+    transform: translateY(-2px);
+  }
+
+  .fate-card-pool.selected {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(201,168,76,0.3);
+  }
+
+  .fate-card-pool.selected.rarity-common { border-color: var(--text-dim); }
+  .fate-card-pool.selected.rarity-uncommon { border-color: var(--green); }
+  .fate-card-pool.selected.rarity-rare { border-color: var(--blue); }
+  .fate-card-pool.selected.rarity-epic { border-color: var(--purple); }
+  .fate-card-pool.selected.rarity-legendary { border-color: #f7c548; }
+  .fate-card-pool.selected.rarity-black { border-color: #888; }
+
+  .fate-card-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+
+  .fate-card-icon { font-size: 1.3rem; }
+
+  .fate-card-name-group {
+    flex: 1;
+  }
+
+  .fate-card-name {
+    font-size: 0.8rem;
+    color: var(--text-main);
+    font-weight: bold;
+  }
+
+  .fate-card-category {
+    font-size: 0.6rem;
+    color: var(--text-dim);
+  }
+
+  .fate-card-rarity {
+    font-size: 0.6rem;
+    padding: 1px 5px;
+    border-radius: 2px;
+    font-weight: bold;
+  }
+
+  .rarity-common .fate-card-rarity { color: var(--text-dim); border: 1px solid var(--text-dim); }
+  .rarity-uncommon .fate-card-rarity { color: var(--green); border: 1px solid var(--green); }
+  .rarity-rare .fate-card-rarity { color: var(--blue); border: 1px solid var(--blue); }
+  .rarity-epic .fate-card-rarity { color: var(--purple); border: 1px solid var(--purple); }
+  .rarity-legendary .fate-card-rarity { color: #f7c548; border: 1px solid #f7c548; }
+  .rarity-black .fate-card-rarity { color: #888; border: 1px solid #666; }
+
+  .fate-card-desc {
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+    margin-bottom: 6px;
+  }
+
+  .fate-card-effects {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+
+  .fate-card-effect {
+    font-size: 0.6rem;
+    padding: 2px 5px;
+    border-radius: 2px;
+    background: rgba(255,255,255,0.05);
+  }
+
+  .fate-card-pool.rarity-common .fate-card-effect { color: var(--text-dim); border: 1px solid var(--text-dim); }
+  .fate-card-pool.rarity-uncommon .fate-card-effect { color: var(--green); border: 1px solid rgba(93,184,122,0.5); }
+  .fate-card-pool.rarity-rare .fate-card-effect { color: var(--blue); border: 1px solid rgba(91,140,232,0.5); }
+  .fate-card-pool.rarity-epic .fate-card-effect { color: var(--purple); border: 1px solid rgba(155,110,232,0.5); }
+  .fate-card-pool.rarity-legendary .fate-card-effect { color: #f7c548; border: 1px solid rgba(247,197,72,0.6); }
+  .fate-card-pool.rarity-black .fate-card-effect { color: #ff4444; border: 1px solid rgba(255,68,68,0.5); }
+
+  /* 选中遮罩 */
+  .fate-card-pool.selected::after {
+    content: '✓';
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.9rem;
+    font-weight: bold;
+  }
+
+  .fate-card-pool.rarity-common.selected::after { color: var(--text-dim); }
+  .fate-card-pool.rarity-uncommon.selected::after { color: var(--green); }
+  .fate-card-pool.rarity-rare.selected::after { color: var(--blue); }
+  .fate-card-pool.rarity-epic.selected::after { color: var(--purple); }
+  .fate-card-pool.rarity-legendary.selected::after { color: #f7c548; }
+  .fate-card-pool.rarity-black.selected::after { color: #ff4444; }
+
+  .fate-action-area {
+    text-align: center;
+    padding: 15px 0;
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+  }
+
+  .btn-start-journey {
+    background: linear-gradient(135deg, #8a6e2f, #c9a84c);
+    border: none;
+    color: #fff;
+    padding: 10px 35px;
+    font-size: 0.9rem;
+    letter-spacing: 0.2em;
+    cursor: pointer;
+    font-family: inherit;
+    border-radius: 4px;
+    transition: all 0.3s;
+    box-shadow: 0 4px 15px rgba(201,168,76,0.3);
+  }
+
+  .btn-start-journey:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(201,168,76,0.5);
+  }
+
+  .btn-start-journey:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  /* 抽取动画 */
+  .fate-card-pool.drawing {
+    animation: cardDraw 0.5s ease;
+  }
+
+  @keyframes cardDraw {
+    0% { opacity: 0; transform: scale(0.8) rotateY(90deg); }
+    100% { opacity: 1; transform: scale(1) rotateY(0deg); }
+  }
+
+  /* 响应式 - 适配小屏幕 */
+  @media (max-width: 768px) {
+    .fate-pool-container {
+      transform: scale(1);
+      margin-bottom: 0;
+    }
+    .fate-cards-pool {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .fate-cards-pool {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* 空状态 */
+  .fate-empty-state {
+    text-align: center;
+    padding: 40px 15px;
+    color: var(--text-dim);
+  }
+
+  .fate-empty-state .empty-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+    opacity: 0.5;
+  }
+
+  .fate-empty-state p {
+    font-size: 0.85rem;
+    margin-bottom: 15px;
+  }
+</style>
+<!-- 数据脚本 -->
+<script src="js/pills.js"></script>
+<script src="js/adventure.js"></script>
+<script src="js/event.js"></script>
+<script src="js/fate.js"></script>
+<!-- 功法系统 -->
+<script src="js/technique.js"></script>
+<!-- 法宝系统 -->
+<script src="js/treasure.js"></script>
+<!-- 角色系统 -->
+<script src="js/character.js"></script>
+<script src="js/game.js"></script>
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particles"></canvas>
+
+<!-- 工具提示 -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ===== 命运池页 ===== -->
+<div class="page active" id="page-fate">
+  <div class="fate-pool-container">
+
+    <div class="fate-pool-header">
+      <h1>天命轮盘</h1>
+      <div class="intro-divider" style="margin:15px auto;"></div>
+      <p>命运的齿轮开始转动 · 抽取你的专属命运</p>
+    </div>
+
+    <!-- 角色属性预览 -->
+    <div class="fate-attrs-panel" id="fate-attrs-panel">
+      <div class="fate-attrs-title">角色预览</div>
+      <div class="fate-attrs-grid">
+        <div class="fate-attr-item">
+          <span class="fate-attr-label">天赋</span>
+          <span class="fate-attr-value"><span id="fate-attr-talent">90</span><span class="fate-attr-bonus" id="fate-attr-talent-bonus"></span></span>
+        </div>
+        <div class="fate-attr-item">
+          <span class="fate-attr-label">气运</span>
+          <span class="fate-attr-value"><span id="fate-attr-luck">75</span><span class="fate-attr-bonus" id="fate-attr-luck-bonus"></span></span>
+        </div>
+        <div class="fate-attr-item">
+          <span class="fate-attr-label">财富</span>
+          <span class="fate-attr-value"><span id="fate-attr-wealth">50</span><span class="fate-attr-bonus" id="fate-attr-wealth-bonus"></span></span>
+        </div>
+        <div class="fate-attr-item">
+          <span class="fate-attr-label">寿元</span>
+          <span class="fate-attr-value"><span id="fate-attr-lifespan">90</span><span class="fate-attr-bonus" id="fate-attr-lifespan-bonus"></span></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="fate-draw-area">
+      <p class="fate-draw-info">
+        已抽取 <span id="drawn-count">0</span> / 9 条命运 · 需选择 <span>3</span> 条踏上修行
+      </p>
+      <button class="btn-draw" id="btn-draw" onclick="drawFate()" style="display:none;">
+        🎲 抽取命运
+      </button>
+      <button class="btn-redraw" id="btn-redraw" onclick="redrawFate()">
+        🔄 命运流转
+      </button>
+    </div>
+
+    <div class="fate-cards-pool" id="fate-cards-pool">
+    </div>
+
+    <div class="fate-action-area">
+      <button class="btn-start-journey" id="btn-start-game" disabled onclick="startGame()">
+        定下此生命运，踏入修行
+      </button>
+    </div>
+
+  </div>
+</div>
+
+</body>
+</html>

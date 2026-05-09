@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仙途问道 · 修仙模拟器</title>
+<link rel="stylesheet" href="css/style.css">
+<script>
+  // 检查是否有存档
+  function hasSavedGame() {
+    const saved = localStorage.getItem('gameState');
+    if (!saved) return false;
+    try {
+      const data = JSON.parse(saved);
+      // 检查是否有有效的游戏进度
+      // 条件：不是新游戏(isNewGame=false) 且 有年份记录(year>=1)
+      return data && data.isNewGame === false && data.year >= 1;
+    } catch (e) {
+      return false;
+    }
+  }
+  
+  function continueGame() {
+    if (hasSavedGame()) {
+      window.location.href = 'game.html';
+    }
+  }
+  
+  function startNewGame() {
+    // 清除存档
+    localStorage.removeItem('gameState');
+    sessionStorage.setItem('fromIndex', 'true');
+    window.location.href = 'fate.html';
+  }
+</script>
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particles"></canvas>
+
+<!-- 工具提示 -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- ===== 开场页 ===== -->
+<div class="page active" id="page-intro">
+  <div class="intro-title">仙途问道</div>
+  <div class="intro-divider"></div>
+  <div class="intro-sub">一沙一世界，一修一永恒</div>
+  <button class="btn-start" onclick="startNewGame()">踏上仙途</button>
+  <button class="btn-start" id="btn-continue" onclick="continueGame()" style="margin-top: 16px;">再续仙途</button>
+  <button class="btn-start" onclick="location.href='achievement.html'" style="margin-top: 16px;">查看成就</button>
+</div>
+
+<script>
+  // 页面加载时检查存档状态
+  document.addEventListener('DOMContentLoaded', function() {
+    const btnContinue = document.getElementById('btn-continue');
+    if (!hasSavedGame()) {
+      btnContinue.classList.add('btn-disabled');
+    }
+  });
+</script>
+
+</body>
+</html>

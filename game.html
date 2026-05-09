@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>仙途问道 · 修仙模拟器</title>
+<link rel="stylesheet" href="css/style.css">
+<script>
+  if (!sessionStorage.getItem('fromIndex')) {
+    window.location.href = 'index.html';
+  }
+</script>
+<!-- 数据脚本 -->
+<script src="js/pills.js"></script>
+<script src="js/adventure.js"></script>
+<script src="js/event.js"></script>
+<script src="js/fate.js"></script>
+<!-- 成就系统 -->
+<script src="js/achievement.js"></script>
+<!-- 功法系统 -->
+<script src="js/technique.js"></script>
+<!-- 法宝系统 -->
+<script src="js/treasure.js"></script>
+<!-- 角色系统 -->
+<script src="js/character.js"></script>
+<!-- 公共脚本 -->
+<script src="js/game.js"></script>
+
+</head>
+<body>
+
+<!-- 粒子背景 -->
+<canvas id="particles"></canvas>
+
+<!-- 工具提示 -->
+<div class="tooltip" id="tooltip"></div>
+
+<!-- 成就解锁弹窗 -->
+<div class="achievement-toast-overlay" id="achievement-toast-overlay"></div>
+<div class="achievement-toast" id="achievement-toast">
+  <div class="toast-glow"></div>
+  <div class="toast-content">
+    <div class="toast-icon">✦</div>
+    <div class="toast-text">
+      <div class="toast-title" id="toast-title">成就解锁</div>
+      <div class="toast-name" id="toast-name">成就名称</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 主游戏页 ===== -->
+<div class="page active" id="page-game">
+
+  <!-- 顶部栏 -->
+  <div class="game-topbar">
+    <div class="game-title">
+      <h2>仙途问道</h2>
+      <span class="realm-badge" id="topbar-realm">炼气初期</span>
+    </div>
+    <div class="game-year">
+      <span class="year-label">修行第</span>
+      <span class="year-value" id="topbar-year">1</span>
+      <span class="year-label">年</span>
+    </div>
+  </div>
+
+  <!-- 左侧属性 -->
+  <div class="panel-left">
+    <div class="char-avatar">
+      <div class="avatar-circle">🧙</div>
+      <div class="char-name">无名散修</div>
+      <div class="char-title" id="char-title">炼气期 · 初入修行</div>
+    </div>
+
+    <div class="panel-title">核心属性</div>
+    <div class="attrs-grid">
+      <div class="attr-item">
+        <div class="attr-label">修为</div>
+        <div class="attr-value attr-cultivation" id="attr-cultivation">1,200</div>
+      </div>
+      <div class="attr-item">
+        <div class="attr-label">战力</div>
+        <div class="attr-value attr-power" id="attr-power">850</div>
+      </div>
+      <div class="attr-item">
+        <div class="attr-label">天赋</div>
+        <div class="attr-value attr-talent" id="attr-talent">72</div>
+      </div>
+      <div class="attr-item">
+        <div class="attr-label">气运</div>
+        <div class="attr-value attr-luck" id="attr-luck">65</div>
+      </div>
+      <div class="attr-item">
+        <div class="attr-label">财富</div>
+        <div class="attr-value attr-wealth" id="attr-wealth">300</div>
+      </div>
+      <div class="attr-item">
+        <div class="attr-label">寿元</div>
+        <div class="attr-value attr-lifespan" id="attr-lifespan">120</div>
+      </div>
+    </div>
+
+    <div class="tags-section" id="tags-section" style="display:none;"></div>
+
+    <div class="panel-title">装备栏</div>
+    <div class="equipment-section">
+      <div class="equipment-slot" id="equipped-technique">
+        <span class="slot-empty">📖 未装备功法</span>
+      </div>
+      <div class="equipment-slot" id="equipped-treasure">
+        <span class="slot-empty">💎 未装备法宝</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 中间事件流 -->
+  <div class="panel-center">
+    <div class="event-feed" id="event-feed">
+      <!-- 开局事件由 JS 动态添加 -->
+    </div>
+
+    <!-- 底部控制栏 -->
+    <div class="game-controls">
+      <button class="btn-next-year" id="btn-next-year" onclick="nextYear()">推进一年 ▶</button>
+      <label class="auto-advance" onclick="toggleAuto()">
+        <div class="toggle-switch" id="auto-toggle"></div>
+        自动推进
+      </label>
+      <div class="speed-control">
+        速度：
+        <button class="speed-btn active" onclick="setSpeed(this,1)">×1</button>
+        <button class="speed-btn" onclick="setSpeed(this,2)">×2</button>
+        <button class="speed-btn" onclick="setSpeed(this,4)">×4</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右侧信息面板 -->
+  <div class="panel-right">
+    <div class="panel-title">物品栏</div>
+    <div class="inventory-section">
+      <div class="inventory-grid" id="inventory-grid">
+        <div class="inventory-empty">物品栏为空</div>
+      </div>
+    </div>
+    <div class="exit-section">
+      <button class="btn-exit-game" onclick="exitGame()">退出当前游戏</button>
+    </div>
+  </div>
+
+</div>
+
+
+</html>
