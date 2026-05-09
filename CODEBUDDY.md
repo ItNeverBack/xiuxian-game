@@ -8,45 +8,59 @@
 
 ```
 game/
-├── *.html           # 入口页面（game.html主游戏, fate.html命运抽取, ending.html结局）
-├── css/style.css    # 游戏样式
+├── index.html        # 游戏入口页面（选择开始/继续/成就）
+├── game.html         # 主游戏页面
+├── fate.html         # 命运抽取页面
+├── ending.html       # 结局页面
+├── achievement.html  # 成就展示页面
+├── css/style.css     # 游戏样式
 ├── js/
-│   ├── game.js      # 核心游戏逻辑（状态管理、UI渲染、修炼战斗）
-│   ├── event.js     # 事件系统（好事/坏事/突发事件，含import导入）
-│   ├── adventure.js  # 奇遇事件子模块（22个多环选择奇遇）
-│   ├── fate.js      # 命运系统数据（40种命运卡片定义）
-│   ├── pills.js     # 丹药系统（15种丹药，含修炼消耗/增长数据）
-│   ├── technique.js # 功法系统（5境界19功法，含品质稀有度和价格）
-│   ├── treasure.js  # 法宝系统（5境界约30法宝，含品质稀有度和价格）
-│   ├── character.js # 角色属性计算
-│   └── temp.js      # 临时/占位文件
-├── dist/            # 预编译资源（Electron打包用）
+│   ├── game.js       # 核心游戏逻辑（状态管理、UI渲染、修炼战斗）
+│   ├── event.js      # 事件系统（好事/坏事/突发事件，含import导入）
+│   ├── adventure.js   # 奇遇事件子模块（22个多环选择奇遇）
+│   ├── fate.js        # 命运系统数据（40种命运卡片定义）
+│   ├── pills.js       # 丹药系统（15种丹药，含修炼消耗/增长数据）
+│   ├── technique.js   # 功法系统（5境界19功法，含品质稀有度和价格）
+│   ├── treasure.js    # 法宝系统（5境界约30法宝，含品质稀有度和价格）
+│   ├── character.js   # 角色属性计算
+│   ├── achievement.js # 成就系统（约45个成就，含单局/累积/隐藏成就）
+│   └── temp.js        # 临时/占位文件
+├── main.js           # Electron桌面应用入口
+├── dist/             # 预编译资源（Electron打包用）
 └── docs/
     ├── NUMERIC_DESIGN.md         # 数值设计文档（境界/修炼/好事坏事/突发事件）
     ├── FATE_DESIGN.md            # 命运系统设计文档
     ├── EVENT_ADVENTURE_DESIGN.md # 事件与奇遇设计文档
-    └── ACHIEVEMENT_DESIGN.md    # 成就系统设计文档（约45个成就）
+    └── ACHIEVEMENT_DESIGN.md     # 成就系统设计文档（约45个成就）
 ```
 
 ## 模块依赖关系
 
 ```
-game.html/fate.html/ending.html
+index.html (游戏入口页面)
     │
-    ├── pills.js (普通script)
-    ├── adventure.js (普通script，非模块)
+    ├── achievement.html (成就页面)
+    │   └── achievement.js
     │
-    ├── event.js (普通script)
-    │   └── 引用 pills.js 中的数据
+    ├── fate.html (命运抽取)
+    │   └── 命运系统
     │
-    ├── technique.js (普通script，含价格计算函数)
-    ├── treasure.js (普通script，含价格计算函数)
-    ├── character.js (普通script)
-    │
-    └── game.js (普通script，主入口)
+    └── game.html (主游戏)
+        │
+        ├── pills.js (丹药数据)
+        ├── adventure.js (奇遇数据)
+        ├── event.js (事件系统)
+        │   └── 引用 pills.js 中的数据
+        ├── technique.js (功法系统，含价格计算)
+        ├── treasure.js (法宝系统，含价格计算)
+        ├── character.js (角色属性)
+        ├── achievement.js (成就系统)
+        └── game.js (核心游戏逻辑)
 ```
 
 **关键规则**：`pills.js` 必须在 `event.js` 之前加载，因为丹药数据已独立到 `pills.js`。
+
+**Electron桌面应用**：使用 `main.js` 作为入口，通过 `index.html` 加载游戏。
 
 ## 核心数值体系
 
@@ -98,6 +112,18 @@ game.html/fate.html/ending.html
 22个多环选择奇遇（炼气3/筑基3/金丹4/元婴6/化神6），通过 `adventure.js` 导出数组 `adventureEvents` 供 `event.js` 使用。
 **注意**：化神相关奇遇已删除，游戏在突破化神时结束。
 
+### 成就系统
+约45个成就，分为三大类型：
+- **单局成就**（15个）：每局游戏独立判定，如境界突破、事件触发等
+- **累积成就**（30个）：跨局累积统计，如修炼次数、灵石获取等
+- **隐藏成就**（4个）：达成特定隐藏条件解锁
+
+成就分类：境界/命运/永恒/隐藏/苦修/财运/仙缘/丹道/典籍/珍藏
+
+稀有度：普通→精良→稀有→史诗→传说，颜色对应白/蓝/紫/橙/金
+
+通过 `achievement.js` 提供成就数据，`achievement.html` 展示成就页面。成就状态存储于 `localStorage`。
+
 ## 开发注意事项
 
 1. **奇遇系统**：由于奇遇已拆分到 `adventure.js`，如需修改奇遇数据，编辑 `adventure.js` 即可
@@ -106,17 +132,23 @@ game.html/fate.html/ending.html
    - `CULTIVATION_GAIN` - 各境界修炼增长
    - `pills` - 15种丹药数据（炼气5/筑基4/金丹3/元婴2/化神1）
    - `PILL_RARITY` - 丹药品质信息
-3. **数值调整**：所有数值设计参考 `docs/NUMERIC_DESIGN.md`，修改后需同步更新该文档
-4. **新增事件**：在对应境界的事件数组中添加对象 `{ text, dAttr, cAttr }` 格式
-5. **命运系统**：编辑 `fate.js` 中的命运数组，稀有度权重总和为120
-6. **功法/法宝价格**：价格已内置于物品数据中，计算公式为：
+3. **成就系统**：编辑 `achievement.js` 中的 `achievements` 数组，稀有度权重为普通/精良/稀有/史诗/传说。成就通过 `localStorage` 存储（`achievementCumulative`、`achievementSingleRun`）。
+4. **数值调整**：所有数值设计参考 `docs/NUMERIC_DESIGN.md`，修改后需同步更新该文档
+5. **新增事件**：在对应境界的事件数组中添加对象 `{ text, dAttr, cAttr }` 格式
+6. **命运系统**：编辑 `fate.js` 中的命运数组，稀有度权重总和为120
+7. **功法/法宝价格**：价格已内置于物品数据中，计算公式为：
    - 基础财富：`[30, 126, 525, 2184, 9084]`（对应炼气→化神）
    - 稀有度倍率：普通=2, 精良=4, 稀有=8, 史诗=15, 传说=25
    - 使用 `getTechniquePrice(technique)` 或 `getTreasurePrice(treasure)` 函数计算
-7. **设计文档**：详细设计文档位于 `docs/` 目录，包括数值设计、命运设计、事件与奇遇设计
+8. **设计文档**：详细设计文档位于 `docs/` 目录，包括数值设计、命运设计、事件与奇遇设计
 
 ## 常用调试
 
-直接用浏览器打开 `game.html` 即可运行，无需服务器。
+### 浏览器运行
+直接用浏览器打开 `index.html` 即可运行游戏，无需服务器。
 
-如需Electron桌面版运行，查看 `dist/` 目录下的预编译资源。
+### Electron桌面版
+```bash
+npm start
+```
+或查看 `dist/` 目录下的预编译资源。
