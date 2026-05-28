@@ -6,7 +6,13 @@
 <title>仙途问道 · 修仙模拟器</title>
 <link rel="stylesheet" href="css/style.css">
 <script>
-  if (!sessionStorage.getItem('fromIndex')) {
+  // 如果已有有效存档，允许直接进入游戏（防止再续仙途死循环）
+  var hasSaved = false;
+  try {
+    var saved = JSON.parse(localStorage.getItem('gameState'));
+    hasSaved = saved && saved.isNewGame === false && saved.year >= 1;
+  } catch(e) {}
+  if (!sessionStorage.getItem('fromIndex') && !hasSaved) {
     window.location.href = 'index.html';
   }
 </script>
@@ -131,6 +137,8 @@
         <button class="speed-btn active" onclick="setSpeed(this,1)">×1</button>
         <button class="speed-btn" onclick="setSpeed(this,2)">×2</button>
         <button class="speed-btn" onclick="setSpeed(this,4)">×4</button>
+        <button class="speed-btn" onclick="setSpeed(this,8)">×8</button>
+        <button class="speed-btn" onclick="setSpeed(this,16)">×16</button>
       </div>
     </div>
   </div>

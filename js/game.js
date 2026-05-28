@@ -1340,6 +1340,9 @@ function handleMajorBreakthrough(breakthroughType) {
       state.realmIndex++;
       const newRealm = realms[state.realmIndex];
       
+      // 清空已购买丹药记录（新境界有新丹药）
+      state.pillsBought = [];
+      
       // 检测境界成就
       checkRealmAchievements();
       
@@ -2373,8 +2376,12 @@ function addPillShopUI(shopEvent) {
   const feed = document.getElementById('event-feed');
   if (!feed) return;
   
-  // 初始化本次商店已购买列表（每次进入商店时清空）
-  state.pillsBought = [];
+  // 移除旧的丹药商店DOM（避免ID冲突）
+  const oldShop = document.getElementById('current-shop');
+  if (oldShop) oldShop.remove();
+  
+  // 确保 pillsBought 已初始化（不清空，保留跨会话购买记录）
+  if (!state.pillsBought) state.pillsBought = [];
   
   // 获取当前境界的所有丹药
   const realmPills = pills.filter(p => p.realmIndex === state.realmIndex);
@@ -2441,6 +2448,12 @@ function buyPill(pillId) {
   
   if (!pill) return;
   
+  // 检查是否已购买（本次商店会话内不可再购买）
+  if (state.pillsBought.includes(pillId)) {
+    showTooltip(document.body, '该丹药已售出！');
+    return;
+  }
+  
   // 检查财富
   if (state.attrs.wealth < pill.price) {
     showTooltip(document.body, '财富不足！');
@@ -2454,12 +2467,12 @@ function buyPill(pillId) {
   const actualGain = pill.cultivationGain;
   state.attrs.cultivation += actualGain;
   
+  // 标记该丹药已购买（先标记再保存，防止刷新丢失购买记录）
+  state.pillsBought.push(pillId);
+  
   // 更新显示
   updateAttrs();
   saveGameState();
-  
-  // 标记该丹药已购买（本次商店会话内不可再购买）
-  state.pillsBought.push(pillId);
   
   // 标记该丹药商店已触发
   if (!state.triggeredShops) state.triggeredShops = {};
@@ -2478,6 +2491,10 @@ function buyPill(pillId) {
   // 修为上限检查
   clampCultivation();
   
+  // 先更新商店UI中的财富显示（即使触发突破也需要显示正确的财富值）
+  const shopWealthEl = document.getElementById('current-shop')?.querySelector('.wealth-value');
+  if (shopWealthEl) shopWealthEl.textContent = state.attrs.wealth.toLocaleString();
+  
   // 检查是否到达突破点
   if (tryAdvanceRealm(0)) {
     // 到达突破点，触发突破事件
@@ -2490,6 +2507,9 @@ function buyPill(pillId) {
   }
   
   // 只在商店内部更新显示，不重新创建商店UI
+  const currentShop = document.getElementById('current-shop');
+  
+  // 更新已购买的丹药项
   const pillItem = document.getElementById(`pill-item-${pillId}`);
   if (pillItem) {
     pillItem.classList.add('sold-out');
@@ -2503,15 +2523,31 @@ function buyPill(pillId) {
     }
   }
   
-  // 更新商店UI中的财富显示（精确匹配当前商店）
-  const currentShop = document.getElementById('current-shop');
+  // 更新所有丹药按钮状态（财富减少后，部分丹药可能买不起）
+  if (currentShop) {
+    const allPillItems = currentShop.querySelectorAll('.pill-shop-item');
+    allPillItems.forEach(item => {
+      const itemBtn = item.querySelector('.shop-buy-btn');
+      if (!itemBtn || itemBtn.disabled) return;
+      // 从item的id中提取pillId
+      const itemId = item.id.replace('pill-item-', '');
+      const p = pills.find(pp => pp.id === itemId);
+      if (p && state.attrs.wealth < p.price) {
+        itemBtn.classList.add('disabled');
+        itemBtn.disabled = true;
+        itemBtn.textContent = '💊 购买 (财富不足)';
+      }
+    });
+  }
+  
+  // 更新商店UI中的财富显示
   if (currentShop) {
     const wealthSpan = currentShop.querySelector('.wealth-value');
     if (wealthSpan) wealthSpan.textContent = state.attrs.wealth.toLocaleString();
   }
   
   // 在商店标题下方显示购买提示
-  const shopBox = document.querySelector('.pill-shop-box');
+  const shopBox = currentShop?.querySelector('.pill-shop-box');
   if (shopBox) {
     const existingMsg = shopBox.querySelector('.shop-buy-msg');
     if (existingMsg) existingMsg.remove();
@@ -2538,7 +2574,7 @@ function leavePillShop() {
   state.currentShop = null;
   window._currentPill = null;
   window._currentPillShopEvent = null;
-  state.pillsBought = [];  // 清空本次商店购买记录，下次商店可重新购买所有丹药
+  // 不再清空 pillsBought，保留跨会话的购买记录
   const btnNextYear = document.getElementById('btn-next-year');
   if (btnNextYear) btnNextYear.disabled = false;
   if (state.autoPlay) scheduleAuto();
@@ -2627,7 +2663,8 @@ function toggleAuto() {
 function scheduleAuto() {
   if (autoTimer) clearTimeout(autoTimer);
   if (!state.autoPlay || state.waitingChoice) return;
-  const delay = [2000, 1200, 600][state.speed - 1] || 1200;
+  const delays = { 1: 2000, 2: 1200, 4: 600, 8: 300, 16: 100 };
+  const delay = delays[state.speed] || 1200;
   autoTimer = setTimeout(() => { nextYear(); if (state.autoPlay && !state.waitingChoice) scheduleAuto(); }, delay);
 }
 
